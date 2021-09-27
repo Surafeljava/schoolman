@@ -26,31 +26,38 @@ class _WrapperState extends State<Wrapper> {
         //Get the user data and lead to the respective user
         return Login();
       } else {
-        //Check if registered
-        var firebaseUser = FirebaseAuth.instance.currentUser;
-        databaseProvider.checkIfUserRegistered(firebaseUser!.uid).then((value) {
-          if (!databaseProvider.registered) {
-            //Go to register
-            return Register();
-          } else {
-            //Go to home
+        if (!databaseProvider.registerChecked) {
+          return Scaffold(
+            body: Center(
+              child: Text("Checking..."),
+            ),
+          );
+        } else {
+          //Check if registered
+          var firebaseUser = FirebaseAuth.instance.currentUser;
+          databaseProvider
+              .checkIfUserRegistered(firebaseUser!.uid)
+              .then((value) async {
+            if (!databaseProvider.registered) {
+              //Go to register
+              return Register();
+            } else {
+              //Go to home
 
-            var firebaseUser = FirebaseAuth.instance.currentUser;
-            databaseProvider.checkIfUserRegistered(firebaseUser!.uid).then(
-              (value) {
-                if (value == 0) {
-                  return Student();
-                } else if (value == 1) {
-                  return Teacher();
-                } else if (value == 2) {
-                  return Parent();
-                } else {
-                  return Registrar();
-                }
-              },
-            );
-          }
-        });
+              print("**** Val: $value");
+              print("**** Registered: ${databaseProvider.registered}");
+              if (value == 0) {
+                return Student();
+              } else if (value == 1) {
+                return Teacher();
+              } else if (value == 2) {
+                return Parent();
+              } else {
+                return Registrar();
+              }
+            }
+          });
+        }
       }
       return Register();
     });

@@ -21,7 +21,12 @@ class DatabaseProvider extends ChangeNotifier {
   Future<void> registerUser(var userModel) async {
     setRegistrationLoading(true);
     try {
-      await firestoreInstance.collection("users").add(userModel.toMap());
+      var firebaseUser = FirebaseAuth.instance.currentUser;
+      String uid = firebaseUser!.uid;
+      await firestoreInstance
+          .collection("users")
+          .doc(uid)
+          .set(userModel.toMap());
       registerChecked = true;
       registered = true;
       notifyListeners();
@@ -46,36 +51,32 @@ class DatabaseProvider extends ChangeNotifier {
     QuerySnapshot querySnapshot =
         await firestoreInstance.collection("classes").get();
     querySnapshot.docs.forEach((element) {
-      classesList.add(ClassModel.fromJson(element.data().toString()));
+      classesList
+          .add(ClassModel.fromMap(element.data() as Map<String, dynamic>));
     });
     notifyListeners();
   }
 
   Future<int> checkIfUserRegistered(String uid) async {
     //Check here
-    var firebaseUser = FirebaseAuth.instance.currentUser;
     try {
-      firestoreInstance
-          .collection("users")
-          .doc(firebaseUser!.uid)
-          .get()
-          .then((value) {
-        if (value.data() != null) {
-          if (value.data()!["userType"] == 0) {
-            student = StudentModel.fromJson(value.data().toString());
-          } else if (value.data()!["userType"] == 1) {
-            teacher = TeacherModel.fromJson(value.data().toString());
-          } else if (value.data()!["userType"] == 2) {
-            parent = ParentModel.fromJson(value.data().toString());
-          } else {
-            registrar = RegistrarModel.fromJson(value.data().toString());
-          }
-          registered = true;
-          registerChecked = true;
-          notifyListeners();
-          return value.data()!["userType"];
+      var value = await firestoreInstance.collection("users").doc(uid).get();
+      if (value.data() != null) {
+        if (value.data()!["userType"] == 0) {
+          student = StudentModel.fromMap(value.data()!);
+        } else if (value.data()!["userType"] == 1) {
+          teacher = TeacherModel.fromMap(value.data()!);
+        } else if (value.data()!["userType"] == 2) {
+          parent = ParentModel.fromMap(value.data()!);
+        } else {
+          registrar = RegistrarModel.fromMap(value.data()!);
         }
-      });
+        registered = true;
+        registerChecked = true;
+        notifyListeners();
+        int type = value.data()!["userType"];
+        return type;
+      }
     } catch (e) {
       print("*** Error: $e");
     }
